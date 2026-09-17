@@ -27,6 +27,7 @@ export function ManagedAgents() {
 agent: coding-agent-prod
 label: task-8f21c
 ceilings:
+  spend_usd: 25
   actions: 40
   resources: 3
   inference_tokens: 500000`}</div>
@@ -52,6 +53,10 @@ ceilings:
                 inference_tokens: {
                   used: DEFAULT_CEILINGS.inference_tokens - (run?.remaining?.inference_tokens ?? 0),
                   max: DEFAULT_CEILINGS.inference_tokens,
+                },
+                spend_usd: {
+                  used: DEFAULT_CEILINGS.spend_usd - (run?.remaining?.spend_usd ?? 0),
+                  max: DEFAULT_CEILINGS.spend_usd,
                 },
               }}
             />

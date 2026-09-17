@@ -19,6 +19,18 @@ export function Droplets() {
         Still billing ${hourlyLeftover().toFixed(3)}/hr across {state.resources.filter((r) => r.stillBilling).length}{" "}
         resources.
       </div>
+      <div className="actions" data-tour="reverse-effects">
+        <button
+          className="btn"
+          disabled={!state.resources.some((r) => r.status === "running" && r.tenantId === "acme-user-a")}
+          onClick={() => dispatch({ type: "REVERSE_EFFECTS", credentialId: "cred_01HQ8f21c" })}
+        >
+          Reverse leftovers for this token
+        </button>
+        <p className="small">
+          Deletes customer A leftovers and stops their bill. Customer B stays up.
+        </p>
+      </div>
       <div className="card" data-tour="leftover-droplets">
         <table>
           <thead>

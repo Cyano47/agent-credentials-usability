@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { TASK_SCOPES } from "../store/seed";
+import { DEFAULT_CEILINGS, TASK_SCOPES } from "../store/seed";
 import { useStore } from "../store/store";
 
-type Tab = "orchestrator" | "agent" | "doctl";
+type Tab = "orchestrator" | "agent" | "doctl" | "mcp" | "terraform";
 
 const ORCH_SRC = `// orchestrator.ts — parent never leaves the secret manager
 const parent = await vault.read("do/prod/coding-agent-parent");
@@ -19,11 +19,17 @@ const res = await fetch("https://api.digitalocean.com/v2/credentials", {
              "volume:*", "inference:invoke"],
     expires_in: 600,
     label: "task-staging",
+    ceilings: {
+      spend_usd: 25,
+      actions: 40,
+      resources: 3,
+      inference_tokens: 500000,
+    },
   }),
 });
 
 const child = await res.json();
-// child.secret is returned once. ceilings is null at GA on this API.
+// child.secret is returned once. ceilings is enforced on this token.
 await harness.start({ env: { DIGITALOCEAN_TOKEN: child.secret } });`;
 
 const AGENT_SRC = `// agent.ts — only the child is in this process
@@ -55,11 +61,46 @@ doctl credentials derive \\
   --parent agent:coding-agent-prod \\
   --scopes droplet:create,droplet:read,droplet:delete,volume:*,inference:invoke \\
   --expires-in 600 \\
+  --spend-usd 25 --actions 40 --resources 3 --inference-tokens 500000 \\
   --label task-staging
 
 # later, stop one task without touching tenant B
 doctl credentials revoke cred_01HQ8f21c
-doctl credentials decisions cred_01HQ8f21c`;
+doctl credentials decisions cred_01HQ8f21c
+doctl credentials reverse cred_01HQ8f21c`;
+
+const MCP = `# DigitalOcean MCP — same derive, revoke, reverse, decisions
+tools:
+  - credentials.derive
+  - credentials.revoke
+  - credentials.decisions
+  - credentials.reverse
+
+# Agent asks the MCP server, not the parent token:
+credentials.derive({
+  parent: "agent:coding-agent-prod",
+  label: "task-staging",
+  expires_in: 600,
+  ceilings: { spend_usd: 25, actions: 40, resources: 3, inference_tokens: 500000 }
+})
+
+# One revoke stops API, MCP, CLI, and Terraform.`;
+
+const TERRAFORM = `# digitalocean_agent_credential — same token, same ceiling
+resource "digitalocean_agent_credential" "staging" {
+  parent             = "agent:coding-agent-prod"
+  label              = "task-staging"
+  expires_in         = 600
+  scopes             = ["droplet:create", "droplet:read", "droplet:delete",
+                        "volume:*", "inference:invoke"]
+  spend_usd          = 25
+  actions            = 40
+  resources          = 3
+  inference_tokens   = 500000
+}
+
+# terraform destroy revokes the credential.
+# digitalocean_agent_credential_reverse deletes leftovers.`;
 
 export function CliIde() {
   const { state, dispatch } = useStore();
@@ -68,11 +109,23 @@ export function CliIde() {
     ? state.credentials.find((c) => c.id === state.lastDerivedSecret?.credentialId)
     : null;
   const idleRun = state.runs.find((r) => r.label === last?.label && r.status === "idle");
+  const ceilings = last?.ceilings ?? DEFAULT_CEILINGS;
+
+  const source =
+    tab === "orchestrator"
+      ? ORCH_SRC
+      : tab === "agent"
+        ? AGENT_SRC
+        : tab === "doctl"
+          ? DOCTL
+          : tab === "mcp"
+            ? MCP
+            : TERRAFORM;
 
   const terminal = last
     ? `$ curl -s -X POST https://api.digitalocean.com/v2/credentials \\
     -H "Authorization: Bearer $DO_PARENT" \\
-    -d '{"parent":"agent:coding-agent-prod","expires_in":600,"label":"${last.label}"}'
+    -d '{"parent":"agent:coding-agent-prod","expires_in":600,"label":"${last.label}","ceilings":{"spend_usd":25,"actions":40,"resources":3,"inference_tokens":500000}}'
 
 HTTP/1.1 201 Created
 {
@@ -81,16 +134,19 @@ HTTP/1.1 201 Created
   "parent": "agent:coding-agent-prod",
   "scopes": ${JSON.stringify(last.scopes)},
   "expires_at": "${last.expiresAt}",
-  "ceilings": null,
+  "ceilings": {
+    "spend_usd": ${ceilings.spend_usd},
+    "actions": ${ceilings.actions},
+    "resources": ${ceilings.resources},
+    "inference_tokens": ${ceilings.inference_tokens}
+  },
   "depth": 1
 }
 
-# Inspect scopes. Do not assume billing:read was granted.
+# Inspect scopes and ceilings. Do not assume billing:read was granted.
 # Put only secret into the agent. Parent stays in vault.`
     : `$ # Parent token is $DO_PARENT from the secret manager
 $ # Run the derive call. The child secret is returned once.`;
-
-  const source = tab === "orchestrator" ? ORCH_SRC : tab === "agent" ? AGENT_SRC : DOCTL;
 
   return (
     <div>
@@ -98,8 +154,8 @@ $ # Run the derive call. The child secret is returned once.`;
         <div>
           <h1>IDE / CLI</h1>
           <p>
-            You can create the same token from code. The DigitalOcean console,{" "}
-            <code>doctl</code>, and the agent all use the same API.
+            Same token from code, <code>doctl</code>, MCP, or Terraform. The DigitalOcean console
+            uses the same API. One revoke stops every surface.
           </p>
         </div>
       </div>
@@ -115,13 +171,19 @@ $ # Run the derive call. The child secret is returned once.`;
           <button className={tab === "doctl" ? "on" : ""} onClick={() => setTab("doctl")}>
             terminal · doctl
           </button>
+          <button className={tab === "mcp" ? "on" : ""} onClick={() => setTab("mcp")}>
+            mcp.json
+          </button>
+          <button className={tab === "terraform" ? "on" : ""} onClick={() => setTab("terraform")}>
+            main.tf
+          </button>
         </div>
         <div className="ide-main">
           <pre className="ide-editor">{source}</pre>
           <div className="ide-term">
             <div className="rail-label">Terminal</div>
             <pre>{terminal}</pre>
-            <div className="actions">
+            <div className="actions" data-tour="cli-surfaces">
               <button
                 className="btn"
                 data-tour="cli-run"
@@ -163,11 +225,12 @@ $ # Run the derive call. The child secret is returned once.`;
           <div className="card">
             <h3>What the API returns</h3>
             <p>
-              You see the secret once. Limits are not set on this API yet. If you send a limit, you
-              get an error until Q2 2027.
+              You see the secret once. The billing ceiling is on the token: $25 spend, 40 actions, 3
+              resources, 500,000 inference tokens.
             </p>
             <p className="small">
-              Same call: <code>doctl credentials derive</code> · MCP · TypeScript / Go / Python SDKs
+              Same call: <code>doctl credentials derive</code> · MCP · Terraform · TypeScript / Go /
+              Python SDKs
             </p>
           </div>
         </div>
@@ -177,9 +240,9 @@ $ # Run the derive call. The child secret is returned once.`;
             <pre className="yaml">{`403 Forbidden
 {
   "id": "ceiling_exhausted",
-  "message": "Action ceiling reached (40 of 40).",
+  "message": "Spend ceiling reached ($25 of $25).",
   "credential": "cred_01HQ8f21c",
-  "remaining": { "actions": 0, "resources": 0, "inference_tokens": 212400 }
+  "remaining": { "spend_usd": 0, "actions": 0, "resources": 0, "inference_tokens": 212400 }
 }
 
 # After revoke, the next mutate is:

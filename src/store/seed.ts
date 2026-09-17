@@ -44,6 +44,7 @@ export const DEFAULT_CEILINGS: CeilingTriple = {
   actions: 40,
   resources: 3,
   inference_tokens: 500000,
+  spend_usd: 25,
 };
 
 export const DEFAULT_OBSERVATIONS: ObservationFlags = {
@@ -65,11 +66,18 @@ const ceil = (
   actionsUsed: number,
   resourcesUsed: number,
   tokensUsed: number,
-  max: { actions: number; resources: number; inference_tokens: number } = DEFAULT_CEILINGS,
+  spendUsed?: number,
+  max: CeilingTriple = DEFAULT_CEILINGS,
 ): CeilingProgress => ({
   actions: { used: actionsUsed, max: max.actions },
   resources: { used: resourcesUsed, max: max.resources },
   inference_tokens: { used: tokensUsed, max: max.inference_tokens },
+  spend_usd: {
+    used:
+      spendUsed ??
+      Math.min(max.spend_usd, Number((resourcesUsed * 7 + actionsUsed * 0.35).toFixed(2))),
+    max: max.spend_usd,
+  },
 });
 
 export const PARENT_CREDENTIAL: Credential = {
@@ -153,7 +161,7 @@ export const RUNS: AgentRun[] = [
     parentLeaked: false,
     stepIndex: 12,
     ceilings: { ...DEFAULT_CEILINGS },
-    remaining: { actions: 2, resources: 0, inference_tokens: 212400 },
+    remaining: { actions: 2, resources: 0, inference_tokens: 212400, spend_usd: 3.2 },
     taskPrompt: "Stand up a staging box for tenant A (web + volume).",
   },
   {
@@ -166,7 +174,7 @@ export const RUNS: AgentRun[] = [
     parentLeaked: false,
     stepIndex: 3,
     ceilings: { ...DEFAULT_CEILINGS },
-    remaining: { actions: 37, resources: 2, inference_tokens: 487160 },
+    remaining: { actions: 37, resources: 2, inference_tokens: 487160, spend_usd: 18.4 },
     taskPrompt: "Refresh tenant B preview environment.",
   },
   {
@@ -178,8 +186,8 @@ export const RUNS: AgentRun[] = [
     injectedCredentialId: "cred_managed_8f21c",
     parentLeaked: false,
     stepIndex: 12,
-    ceilings: { actions: 40, resources: 3, inference_tokens: 500000 },
-    remaining: { actions: 0, resources: 0, inference_tokens: 212400 },
+    ceilings: { ...DEFAULT_CEILINGS },
+    remaining: { actions: 0, resources: 0, inference_tokens: 212400, spend_usd: 0 },
     taskPrompt: "Stand up a staging box for tenant A (web + volume).",
   },
 ];
@@ -195,7 +203,7 @@ export const MANAGED_CHILD: Credential = {
   expiresAt: "2027-02-10T18:41:00Z",
   expiresInSeconds: 600,
   status: "active",
-  ceilings: { actions: 40, resources: 3, inference_tokens: 500000 },
+  ceilings: { ...DEFAULT_CEILINGS },
   depth: 1,
   lastActivity: "2027-02-10T18:33:58Z",
   createdAt: "2027-02-10T18:31:00Z",
@@ -381,8 +389,8 @@ export const DECISIONS: Decision[] = [
     scope: "volume:create",
     outcome: "permitted",
     task: "task-8f21c",
-    ceilings: ceil(40, 3, 287600),
-    detail: "Action limit reached on this call.",
+    ceilings: ceil(40, 3, 287600, 25),
+    detail: "Action and $25 spend ceilings reached on this call.",
   }),
   d({
     id: "dec_a_14",
@@ -393,9 +401,9 @@ export const DECISIONS: Decision[] = [
     scope: "droplet:create",
     outcome: "ceiling_exhausted",
     task: "task-8f21c",
-    ceilings: ceil(40, 3, 287600),
+    ceilings: ceil(40, 3, 287600, 25),
     detail:
-      "403 ceiling_exhausted. Action limit reached (40 of 40) after Droplet, Volume, and inference calls.",
+      "403 ceiling_exhausted. Action and $25 spend ceilings reached after Droplet, Volume, and inference calls.",
   }),
   d({
     id: "dec_b_01",
@@ -529,6 +537,8 @@ export function createInitialState(): StudyState {
     demoStep: 0,
     walkthroughOpen: false,
     activeScenarioId: null,
+    ownerEmail: "maya@acme.com",
+    ownerOffboarded: false,
     selectedCredentialId: PARENT_CREDENTIAL.id,
     selectedDecisionFilter: "all",
     lastDerivedSecret: null,

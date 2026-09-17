@@ -11,10 +11,12 @@ Open the URL Vite prints (usually `http://localhost:5173`). The first screen is 
 
 | Surface | What it is |
 | --- | --- |
-| Your app | Secret manager + start task + agent env |
-| API tokens | Control Panel token list, revoke, activity |
-| Droplets | Leftover resources still billing |
-| Agents | Managed Agents contrast |
+| DO console | Secret manager + create a task token with a $ spend ceiling |
+| API tokens | Token list, revoke, activity, billing ceiling |
+| Resources | Leftovers still billing, plus reverse leftovers |
+| Agents | Managed Agents run with the same $ / quantity ceiling |
+| IDE / CLI | Same derive on TypeScript, doctl, MCP, and Terraform |
+| Control plane | Suggested ceilings, utilization, reconciliation, offboarding, OIDC, intent-bound actions |
 
 DigitalOcean’s official console-lookalike repo is [Skiff](https://github.internal.digitalocean.com/digitalocean/skiff) (VPN). This local app copies Control Panel IA; it does not import Skiff.
 

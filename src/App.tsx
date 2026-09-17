@@ -6,6 +6,7 @@ import { Droplets } from "./screens/Droplets";
 import { ManagedAgents } from "./screens/ManagedAgents";
 import { CliIde } from "./screens/CliIde";
 import { Scenarios } from "./screens/Scenarios";
+import { Vision } from "./screens/Vision";
 
 function Screen() {
   const { state } = useStore();
@@ -27,6 +28,8 @@ function Screen() {
       return <Droplets />;
     case "managed-agents":
       return <ManagedAgents />;
+    case "vision":
+      return <Vision />;
   }
 }
 

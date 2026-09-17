@@ -64,7 +64,7 @@ export function Console() {
                 <td>{cred.scopes.length}</td>
                 <td>
                   {cred.ceilings
-                    ? `${cred.ceilings.actions} actions · ${cred.ceilings.resources} resources`
+                    ? `$${cred.ceilings.spend_usd} · ${cred.ceilings.actions} actions · ${cred.ceilings.resources} resources`
                     : "None"}
                 </td>
                 <td>
@@ -100,8 +100,8 @@ export function Console() {
               {(runA?.status === "paused" || runA?.status === "ceiling_exhausted") &&
                 selected.id === "cred_01HQ8f21c" && (
                   <div className="banner warn" data-tour="ceiling-banner">
-                    Billing ceiling reached (40 of 40 actions). End the task or create a new token
-                    from the main token. The agent cannot raise this ceiling.
+                    Billing ceiling reached ($25 of $25, 40 of 40 actions). End the task or create a
+                    new token from the main token. The agent cannot raise this ceiling.
                     <div className="actions">
                       <button
                         className="btn secondary"

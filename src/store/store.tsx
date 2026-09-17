@@ -59,7 +59,10 @@ type Action =
   | { type: "APPROVE_NEW_CHILD"; runId: string }
   | { type: "TRY_EXTEND"; credentialId: string }
   | { type: "TRY_RAISE_CEILING"; runId: string }
-  | { type: "DELETE_RESOURCE"; resourceId: string };
+  | { type: "DELETE_RESOURCE"; resourceId: string }
+  | { type: "REVERSE_EFFECTS"; credentialId?: string }
+  | { type: "OFFBOARD_OWNER" }
+  | { type: "TRY_INTENT_BOUND" };
 
 export type WizardKind =
   | "agent-retried"
@@ -107,6 +110,7 @@ function remainingFor(
     actions: Math.max(0, ceilings.actions - last.ceilings.actions.used),
     resources: Math.max(0, ceilings.resources - last.ceilings.resources.used),
     inference_tokens: Math.max(0, ceilings.inference_tokens - last.ceilings.inference_tokens.used),
+    spend_usd: Math.max(0, ceilings.spend_usd - (last.ceilings.spend_usd?.used ?? 0)),
   };
 }
 
@@ -161,6 +165,14 @@ function reducer(state: StudyState, action: Action): StudyState {
       }
       if (step.apply === "hit-ceiling") {
         next = reducer(next, { type: "WIZARD", kind: "hit-ceiling" });
+        next = { ...next, demoStep: action.step, screen: step.screen, toast: null };
+      }
+      if (step.apply === "cleanup") {
+        next = reducer(next, { type: "REVERSE_EFFECTS", credentialId: CHILD_A.id });
+        next = { ...next, demoStep: action.step, screen: step.screen, toast: null };
+      }
+      if (step.apply === "offboard") {
+        next = reducer(next, { type: "OFFBOARD_OWNER" });
         next = { ...next, demoStep: action.step, screen: step.screen, toast: null };
       }
       return next;
@@ -451,6 +463,7 @@ function reducer(state: StudyState, action: Action): StudyState {
             actions: { used: hit ? 40 : 10, max: 40 },
             resources: { used: 3, max: 3 },
             inference_tokens: { used: 287600, max: 500000 },
+            spend_usd: { used: hit ? 25 : 12.4, max: 25 },
           },
           detail: hit
             ? "403 ceiling_exhausted. The agent cannot raise its own ceiling."
@@ -471,7 +484,9 @@ function reducer(state: StudyState, action: Action): StudyState {
               ? {
                   ...r,
                   status: nextStatus,
-                  remaining: hit ? { actions: 0, resources: 0, inference_tokens: 212400 } : r.remaining,
+                  remaining: hit
+                    ? { actions: 0, resources: 0, inference_tokens: 212400, spend_usd: 0 }
+                    : r.remaining,
                 }
               : r,
           ),
@@ -580,6 +595,36 @@ function reducer(state: StudyState, action: Action): StudyState {
         ),
         toast: `${action.resourceId} deleted. Billing stopped.`,
         eventLog: addLog(state, `Deleted ${action.resourceId}`),
+      };
+    case "REVERSE_EFFECTS": {
+      const id = action.credentialId;
+      const next = state.resources.map((r) =>
+        r.status === "running" && (!id || r.credentialId === id)
+          ? { ...r, status: "deleted" as const, stillBilling: false }
+          : r,
+      );
+      const cleared = next.filter((r, i) => r.status === "deleted" && state.resources[i].status === "running").length;
+      return {
+        ...state,
+        resources: next,
+        toast: `Reversed ${cleared} resources. They no longer bill.`,
+        eventLog: addLog(state, `Reversed ${cleared} leftover resources`),
+      };
+    }
+    case "OFFBOARD_OWNER":
+      return {
+        ...state,
+        ownerOffboarded: true,
+        ownerEmail: "platform-oncall@acme.com",
+        toast: "Maya left. Credentials re-attributed to platform-oncall. Runs keep their ceilings.",
+        eventLog: addLog(state, "Owner offboarded; credentials re-attributed"),
+      };
+    case "TRY_INTENT_BOUND":
+      return {
+        ...state,
+        toast:
+          "403 intent_denied. This token may create staging-web-1, not update preview-api-1. Authority is the operation, not droplet:update.",
+        eventLog: addLog(state, "Intent-bound refusal: droplet:update on preview-api-1"),
       };
     default:
       return state;

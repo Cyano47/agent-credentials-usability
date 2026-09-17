@@ -24,7 +24,8 @@ export type ScreenId =
   | "orchestrator"
   | "harness"
   | "run-inspector"
-  | "scenarios";
+  | "scenarios"
+  | "vision";
 
 export type RunStatus =
   | "idle"
@@ -41,12 +42,14 @@ export interface CeilingTriple {
   actions: number;
   resources: number;
   inference_tokens: number;
+  spend_usd: number;
 }
 
 export interface CeilingProgress {
   actions: { used: number; max: number };
   resources: { used: number; max: number };
   inference_tokens: { used: number; max: number };
+  spend_usd: { used: number; max: number };
 }
 
 export interface Credential {
@@ -157,4 +160,6 @@ export interface StudyState {
   demoStep: number;
   walkthroughOpen: boolean;
   activeScenarioId: string | null;
+  ownerEmail: string;
+  ownerOffboarded: boolean;
 }

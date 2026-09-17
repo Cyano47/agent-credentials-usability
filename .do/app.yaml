@@ -3,9 +3,8 @@ region: nyc
 static_sites:
   - name: web
     git:
-      repo_clone_url: https://github.com/refoundai/lenny-skills.git
-      branch: deploy-prototype
-    source_dir: prototype/agent-credentials-usability
+      repo_clone_url: https://github.com/Cyano47/agent-credentials-usability.git
+      branch: main
     output_dir: dist
     index_document: index.html
     catchall_document: index.html

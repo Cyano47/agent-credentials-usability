@@ -15,7 +15,10 @@ export function AccountRail() {
   return (
     <aside className="rail" data-tour="live-account">
       <h3>Live account</h3>
-      <p className="small">Watch what stays running.</p>
+      <p className="small">
+        Owner {state.ownerEmail}
+        {state.ownerOffboarded ? " · re-attributed" : ""}
+      </p>
       <div className="rail-card">
         <div className="rail-label">Customer A · task-8f21c</div>
         <div>

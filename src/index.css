@@ -446,3 +446,9 @@ tr.clickable:hover { background: #f7faff; }
 }
 .ceiling-meter.hit .ceiling-track i { background: var(--do-amber); }
 .billing-ceiling .small { margin: 8px 0 0; }
+
+.intent-list {
+  margin: 8px 0;
+  padding-left: 18px;
+}
+.intent-list li { margin: 6px 0; }

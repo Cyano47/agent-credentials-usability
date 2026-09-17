@@ -98,8 +98,9 @@ export function Platform() {
                     actions: { used: 0, max: DEFAULT_CEILINGS.actions },
                     resources: { used: 0, max: DEFAULT_CEILINGS.resources },
                     inference_tokens: { used: 0, max: DEFAULT_CEILINGS.inference_tokens },
+                    spend_usd: { used: 0, max: DEFAULT_CEILINGS.spend_usd },
                   }}
-                  note="This task token stops at 40 actions, 3 resources, and 500,000 inference tokens. That is the billing ceiling. It cannot see billing. Leftover Droplets still bill after the ceiling is hit."
+                  note="Suggested from the last 12 coding-agent-prod runs: $18 spend, 36 actions. This token stops at $25, 40 actions, 3 resources, and 500,000 inference tokens. Leftover Droplets still bill until you reverse them."
                 />
                 <button
                   className="btn"

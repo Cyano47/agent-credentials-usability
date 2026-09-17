@@ -11,6 +11,7 @@ const NAV: { id: ScreenId; label: string; section: string }[] = [
   { id: "droplets", label: "Resources", section: "Manage" },
   { id: "managed-agents", label: "Agents", section: "Manage" },
   { id: "cli", label: "IDE / CLI", section: "Manage" },
+  { id: "vision", label: "Control plane", section: "Manage" },
 ];
 
 export function Layout({ children }: { children: ReactNode }) {
