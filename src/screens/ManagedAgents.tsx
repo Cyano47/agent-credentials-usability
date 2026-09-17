@@ -1,3 +1,5 @@
+import { BillingCeiling } from "../components/BillingCeiling";
+import { DEFAULT_CEILINGS } from "../store/seed";
 import { useStore, useStudyHelpers } from "../store/store";
 
 export function ManagedAgents() {
@@ -12,8 +14,8 @@ export function ManagedAgents() {
         <div>
           <h1>Agents</h1>
           <p>
-            DigitalOcean created this token for the run. You did not. Limits are on the run, not on a
-            saved token.
+            DigitalOcean created this token for the run. You did not. The billing ceiling is on the
+            run, not on a saved token.
           </p>
         </div>
       </div>
@@ -36,14 +38,27 @@ ceilings:
             <p>
               Status <span className={`pill ${run?.status}`}>{run?.status}</span>
             </p>
-            <p className="small">
-              Remaining: {run?.remaining?.actions} actions · {run?.remaining?.resources} resources ·{" "}
-              {run?.remaining?.inference_tokens} inference tokens
-            </p>
+            <BillingCeiling
+              tour
+              progress={{
+                actions: {
+                  used: DEFAULT_CEILINGS.actions - (run?.remaining?.actions ?? 0),
+                  max: DEFAULT_CEILINGS.actions,
+                },
+                resources: {
+                  used: DEFAULT_CEILINGS.resources - (run?.remaining?.resources ?? 0),
+                  max: DEFAULT_CEILINGS.resources,
+                },
+                inference_tokens: {
+                  used: DEFAULT_CEILINGS.inference_tokens - (run?.remaining?.inference_tokens ?? 0),
+                  max: DEFAULT_CEILINGS.inference_tokens,
+                },
+              }}
+            />
             {state.exhaustVariant === "pause-and-approve" ? (
               <div className="banner warn">
-                The run paused at its limit. Create a new token, or end the task. The agent cannot
-                raise its own limit.
+                The run paused at its billing ceiling. Create a new token, or end the task. The
+                agent cannot raise its own ceiling.
               </div>
             ) : (
               <div className="banner warn">

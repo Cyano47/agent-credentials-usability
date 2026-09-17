@@ -1,6 +1,7 @@
 import type {
   AgentRun,
   CeilingProgress,
+  CeilingTriple,
   Credential,
   Decision,
   ManagedResource,
@@ -39,6 +40,12 @@ export const AGENT_ACTIONS = [
   { action: "Call inference", scope: "inference:invoke" },
 ] as const;
 
+export const DEFAULT_CEILINGS: CeilingTriple = {
+  actions: 40,
+  resources: 3,
+  inference_tokens: 500000,
+};
+
 export const DEFAULT_OBSERVATIONS: ObservationFlags = {
   parentShownInHarness: false,
   childMintedOnceReused: false,
@@ -58,11 +65,7 @@ const ceil = (
   actionsUsed: number,
   resourcesUsed: number,
   tokensUsed: number,
-  max: { actions: number; resources: number; inference_tokens: number } = {
-    actions: 40,
-    resources: 3,
-    inference_tokens: 500000,
-  },
+  max: { actions: number; resources: number; inference_tokens: number } = DEFAULT_CEILINGS,
 ): CeilingProgress => ({
   actions: { used: actionsUsed, max: max.actions },
   resources: { used: resourcesUsed, max: max.resources },
@@ -100,7 +103,7 @@ export const CHILD_A: Credential = {
   expiresAt: "2027-02-10T18:41:00Z",
   expiresInSeconds: 600,
   status: "active",
-  ceilings: null,
+  ceilings: { ...DEFAULT_CEILINGS },
   depth: 1,
   lastActivity: "2027-02-10T18:33:58Z",
   createdAt: "2027-02-10T18:31:00Z",
@@ -120,7 +123,7 @@ export const CHILD_B: Credential = {
   expiresAt: "2027-02-10T18:44:00Z",
   expiresInSeconds: 600,
   status: "active",
-  ceilings: null,
+  ceilings: { ...DEFAULT_CEILINGS },
   depth: 1,
   lastActivity: "2027-02-10T18:33:40Z",
   createdAt: "2027-02-10T18:34:00Z",
@@ -149,8 +152,8 @@ export const RUNS: AgentRun[] = [
     injectedCredentialId: CHILD_A.id,
     parentLeaked: false,
     stepIndex: 12,
-    ceilings: null,
-    remaining: null,
+    ceilings: { ...DEFAULT_CEILINGS },
+    remaining: { actions: 2, resources: 0, inference_tokens: 212400 },
     taskPrompt: "Stand up a staging box for tenant A (web + volume).",
   },
   {
@@ -162,8 +165,8 @@ export const RUNS: AgentRun[] = [
     injectedCredentialId: CHILD_B.id,
     parentLeaked: false,
     stepIndex: 3,
-    ceilings: null,
-    remaining: null,
+    ceilings: { ...DEFAULT_CEILINGS },
+    remaining: { actions: 37, resources: 2, inference_tokens: 487160 },
     taskPrompt: "Refresh tenant B preview environment.",
   },
   {

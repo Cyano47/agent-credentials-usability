@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { PARENT_CREDENTIAL, TASK_SCOPES } from "../store/seed";
+import { BillingCeiling } from "../components/BillingCeiling";
+import { DEFAULT_CEILINGS, PARENT_CREDENTIAL, TASK_SCOPES } from "../store/seed";
 import { useStore } from "../store/store";
 import type { TenantId } from "../types";
 
@@ -91,9 +92,15 @@ export function Platform() {
                     <option value={86400}>24 hours</option>
                   </select>
                 </div>
-                <p className="small">
-                  This token can create Droplets and Volumes, and call inference. It cannot see billing.
-                </p>
+                <BillingCeiling
+                  tour
+                  progress={{
+                    actions: { used: 0, max: DEFAULT_CEILINGS.actions },
+                    resources: { used: 0, max: DEFAULT_CEILINGS.resources },
+                    inference_tokens: { used: 0, max: DEFAULT_CEILINGS.inference_tokens },
+                  }}
+                  note="This task token stops at 40 actions, 3 resources, and 500,000 inference tokens. That is the billing ceiling. It cannot see billing. Leftover Droplets still bill after the ceiling is hit."
+                />
                 <button
                   className="btn"
                   onClick={() =>

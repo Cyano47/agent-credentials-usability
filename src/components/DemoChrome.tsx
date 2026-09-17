@@ -1,3 +1,4 @@
+import { BillingCeiling, ceilingProgress } from "./BillingCeiling";
 import { CHILD_A, CHILD_B } from "../store/seed";
 import { useStore, useStudyHelpers } from "../store/store";
 
@@ -26,6 +27,7 @@ export function AccountRail() {
         <div className="small">
           {leftovers.length} still running · ${hourlyLeftover("acme-user-a").toFixed(3)}/hr
         </div>
+        <BillingCeiling compact progress={ceilingProgress(state.decisions, CHILD_A.id)} />
       </div>
       <div className="rail-card">
         <div className="rail-label">Customer B · task-b19d4</div>

@@ -1,3 +1,4 @@
+import { BillingCeiling, ceilingProgress } from "../components/BillingCeiling";
 import { REVOKE_COPY, useStore, useStudyHelpers } from "../store/store";
 import type { Outcome } from "../types";
 
@@ -38,6 +39,7 @@ export function Console() {
               <th>Last used</th>
               <th>Expires</th>
               <th>Scopes</th>
+              <th>Billing ceiling</th>
               <th>Status</th>
             </tr>
           </thead>
@@ -60,6 +62,11 @@ export function Console() {
                 <td>{cred.lastActivity.replace("T", " ").slice(0, 16)}</td>
                 <td>{cred.kind === "parent" ? "31 Dec 2027" : cred.expiresAt.slice(11, 16) + " UTC"}</td>
                 <td>{cred.scopes.length}</td>
+                <td>
+                  {cred.ceilings
+                    ? `${cred.ceilings.actions} actions · ${cred.ceilings.resources} resources`
+                    : "None"}
+                </td>
                 <td>
                   <span className={`pill ${cred.status}`}>{cred.status}</span>
                 </td>
@@ -84,11 +91,17 @@ export function Console() {
                   : "This token is for one task. Other customers keep their own tokens."}
               </p>
               <p>Scopes: {selected.scopes.join(", ")}</p>
+              {selected.kind === "child" && (
+                <BillingCeiling
+                  tour
+                  progress={ceilingProgress(state.decisions, selected.id, selected.ceilings ?? undefined)}
+                />
+              )}
               {(runA?.status === "paused" || runA?.status === "ceiling_exhausted") &&
                 selected.id === "cred_01HQ8f21c" && (
                   <div className="banner warn" data-tour="ceiling-banner">
-                    Action limit reached (40 of 40). End the task or create a new token from the
-                    main token. The agent cannot raise this limit.
+                    Billing ceiling reached (40 of 40 actions). End the task or create a new token
+                    from the main token. The agent cannot raise this ceiling.
                     <div className="actions">
                       <button
                         className="btn secondary"
@@ -106,7 +119,7 @@ export function Console() {
                         className="btn danger"
                         onClick={() => dispatch({ type: "TRY_RAISE_CEILING", runId: runA.id })}
                       >
-                        Let the agent raise the limit
+                        Let the agent raise the billing ceiling
                       </button>
                     </div>
                   </div>

@@ -26,6 +26,7 @@ import {
   PARENT_SCOPES,
   TASK_SCOPES,
   createInitialState,
+  DEFAULT_CEILINGS,
 } from "./seed";
 import { scenarioById } from "./demo";
 
@@ -228,7 +229,7 @@ function reducer(state: StudyState, action: Action): StudyState {
         expiresAt: tick(state, action.expiresInSeconds),
         expiresInSeconds: action.expiresInSeconds,
         status: "active",
-        ceilings: null,
+        ceilings: { ...DEFAULT_CEILINGS },
         depth: 1,
         lastActivity: state.nowIso,
         createdAt: state.nowIso,
@@ -256,8 +257,8 @@ function reducer(state: StudyState, action: Action): StudyState {
             injectedCredentialId: null,
             parentLeaked: false,
             stepIndex: 0,
-            ceilings: null,
-            remaining: null,
+            ceilings: { ...DEFAULT_CEILINGS },
+            remaining: { ...DEFAULT_CEILINGS },
             taskPrompt: "Stand up a staging box.",
           },
         ],
@@ -476,7 +477,7 @@ function reducer(state: StudyState, action: Action): StudyState {
           ),
           toast: hit
             ? state.exhaustVariant === "pause-and-approve"
-              ? "Run paused. End the task or create a new token. The agent cannot raise its own limit."
+              ? "Run paused. End the task or create a new token. The agent cannot raise its own billing ceiling."
               : "Run stopped. Create a new token if they still want the environment."
             : "Agent retried a create.",
           eventLog: addLog(state, hit ? `Ceiling exhausted on ${cred.label}` : `Retry on ${cred.label}`),
@@ -531,7 +532,7 @@ function reducer(state: StudyState, action: Action): StudyState {
         expiresAt: tick(state, 600),
         expiresInSeconds: 600,
         status: "active",
-        ceilings: run.mode === "managed" ? { actions: 40, resources: 3, inference_tokens: 500000 } : null,
+        ceilings: { ...DEFAULT_CEILINGS },
         depth: 1,
         lastActivity: state.nowIso,
         createdAt: state.nowIso,
@@ -557,7 +558,7 @@ function reducer(state: StudyState, action: Action): StudyState {
               }
             : r,
         ),
-        toast: "New task token created and given to the agent. The agent did not raise its own limit.",
+        toast: "New task token created and given to the agent. The agent did not raise its own billing ceiling.",
         eventLog: addLog(state, `Approved new child ${child.label}`),
       };
     }
@@ -569,7 +570,7 @@ function reducer(state: StudyState, action: Action): StudyState {
     case "TRY_RAISE_CEILING":
       return {
         ...mark(state, "triedToRaiseCeilingFromAgent"),
-        toast: "The agent cannot raise its own limit. End the task or create a new token.",
+        toast: "The agent cannot raise its own billing ceiling. End the task or create a new token.",
       };
     case "DELETE_RESOURCE":
       return {

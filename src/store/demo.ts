@@ -39,6 +39,15 @@ const createToken: WalkStep = {
   placement: "left",
 };
 
+const billingCeiling: WalkStep = {
+  title: "This is the billing ceiling",
+  body: "40 actions, 3 resources, 500,000 inference tokens. New API calls stop when this is hit. Droplets already created still bill. The agent cannot raise it.",
+  tryThis: "Leave these numbers. Then create the task token.",
+  target: "billing-ceiling",
+  screen: "platform",
+  placement: "left",
+};
+
 const twoAmPager: WalkStep = {
   title: "It is 2 a.m.",
   body: "Customer A’s agent is looping Create Droplet, Create Volume, and Call inference. Customer B must keep running.",
@@ -73,10 +82,10 @@ const leftovers: WalkStep = {
 };
 
 const hitLimit: WalkStep = {
-  title: "The run hit a limit",
-  body: "40 actions. The run pauses. The user still wants the environment. End the task or create a new token from the main token. The agent cannot raise the limit itself.",
-  tryThis: "Do not click “Let the agent raise the limit.”",
-  target: "ceiling-banner",
+  title: "The billing ceiling was hit",
+  body: "40 of 40 actions. The run pauses. The user still wants the environment. End the task or create a new token from the main token. The agent cannot raise the billing ceiling.",
+  tryThis: "Do not click “Let the agent raise the billing ceiling.”",
+  target: "billing-ceiling",
   screen: "console",
   select: CHILD_A.id,
   apply: "hit-ceiling",
@@ -86,7 +95,7 @@ const hitLimit: WalkStep = {
 
 const managed: WalkStep = {
   title: "Same pager. You did not make this token.",
-  body: "DigitalOcean created the token for this Managed Agents run. Limits are on the run. Same incident as 2 a.m.",
+  body: "DigitalOcean created the token for this Managed Agents run. The billing ceiling is on the run. Same incident as 2 a.m.",
   tryThis: "Approve a new token or end the task.",
   target: "managed-run",
   screen: "managed-agents",
@@ -126,7 +135,7 @@ export const SCENARIOS: Scenario[] = [
     title: "Ship a task",
     blurb:
       "A customer asked your coding agent to stand up a staging box. The main token is already saved. Get the agent running without giving it more access than the task needs.",
-    steps: [savedToken, createToken],
+      steps: [savedToken, createToken, billingCeiling],
   },
   {
     id: "two-am",
@@ -138,8 +147,8 @@ export const SCENARIOS: Scenario[] = [
   },
   {
     id: "hit-limit",
-    title: "The agent hit a limit",
-    blurb: "The run returned a limit after 40 actions. The user still wants the environment. What do you do?",
+    title: "The billing ceiling was hit",
+    blurb: "The run hit the billing ceiling after 40 actions. The user still wants the environment. What do you do?",
     setup: "hit-ceiling",
     steps: [hitLimit],
   },
@@ -161,10 +170,11 @@ export const SCENARIOS: Scenario[] = [
     id: "complete",
     title: "Complete walkthrough",
     blurb:
-      "All of the jobs, in order: ship a task, create the token from the IDE, 2 a.m. loop, the limit, then Managed Agents. You click Next or Exit.",
+      "All of the jobs, in order: ship a task, create the token from the IDE, 2 a.m. loop, the billing ceiling, then Managed Agents. You click Next or Exit.",
     steps: [
       savedToken,
       createToken,
+      billingCeiling,
       cliCode,
       cliRun,
       cliExport,
