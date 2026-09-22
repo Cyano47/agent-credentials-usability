@@ -25,7 +25,14 @@ export type ScreenId =
   | "harness"
   | "run-inspector"
   | "scenarios"
-  | "vision";
+  | "vision"
+  | "limits"
+  | "shutoff"
+  | "decisions"
+  | "suggested"
+  | "offboard"
+  | "oidc"
+  | "intent";
 
 export type RunStatus =
   | "idle"

@@ -15,7 +15,7 @@ const res = await fetch("https://api.digitalocean.com/v2/credentials", {
   },
   body: JSON.stringify({
     parent: "agent:coding-agent-prod",
-    scopes: ["droplet:create", "droplet:read", "droplet:delete",
+    scopes: ["droplet:create:basic", "droplet:read", "droplet:delete",
              "volume:*", "inference:invoke"],
     expires_in: 600,
     label: "task-staging",
@@ -59,22 +59,23 @@ export DIGITALOCEAN_ACCESS_TOKEN=$(vault read -field=value do/prod/coding-agent-
 
 doctl credentials derive \\
   --parent agent:coding-agent-prod \\
-  --scopes droplet:create,droplet:read,droplet:delete,volume:*,inference:invoke \\
+  --scopes droplet:create:basic,droplet:read,droplet:delete,volume:*,inference:invoke \\
   --expires-in 600 \\
   --spend-usd 25 --actions 40 --resources 3 --inference-tokens 500000 \\
   --label task-staging
 
-# later, stop one task without touching tenant B
+# stop one task without touching tenant B
 doctl credentials revoke cred_01HQ8f21c
+doctl credentials reverse cred_01HQ8f21c
 doctl credentials decisions cred_01HQ8f21c
-doctl credentials reverse cred_01HQ8f21c`;
+doctl credentials orphans`;
 
 const MCP = `# DigitalOcean MCP — same derive, revoke, reverse, decisions
 tools:
   - credentials.derive
   - credentials.revoke
-  - credentials.decisions
   - credentials.reverse
+  - credentials.decisions
 
 # Agent asks the MCP server, not the parent token:
 credentials.derive({
@@ -84,14 +85,14 @@ credentials.derive({
   ceilings: { spend_usd: 25, actions: 40, resources: 3, inference_tokens: 500000 }
 })
 
-# One revoke stops API, MCP, CLI, and Terraform.`;
+# One revoke stops API, MCP, and CLI. Reverse stops leftover billing.`;
 
-const TERRAFORM = `# digitalocean_agent_credential — same token, same ceiling
+const TERRAFORM = `# digitalocean_agent_credential
 resource "digitalocean_agent_credential" "staging" {
   parent             = "agent:coding-agent-prod"
   label              = "task-staging"
   expires_in         = 600
-  scopes             = ["droplet:create", "droplet:read", "droplet:delete",
+  scopes             = ["droplet:create:basic", "droplet:read", "droplet:delete",
                         "volume:*", "inference:invoke"]
   spend_usd          = 25
   actions            = 40
@@ -100,7 +101,7 @@ resource "digitalocean_agent_credential" "staging" {
 }
 
 # terraform destroy revokes the credential.
-# digitalocean_agent_credential_reverse deletes leftovers.`;
+# credentials.reverse then stops leftover Droplet billing.`;
 
 export function CliIde() {
   const { state, dispatch } = useStore();
@@ -154,8 +155,8 @@ $ # Run the derive call. The child secret is returned once.`;
         <div>
           <h1>IDE / CLI</h1>
           <p>
-            Same token from code, <code>doctl</code>, MCP, or Terraform. The DigitalOcean console
-            uses the same API. One revoke stops every surface.
+            Same credential from code, <code>doctl</code>, MCP, or Terraform. One shutoff stops every
+            surface. Reverse leftovers stops the hourly bill.
           </p>
         </div>
       </div>
@@ -225,8 +226,8 @@ $ # Run the derive call. The child secret is returned once.`;
           <div className="card">
             <h3>What the API returns</h3>
             <p>
-              You see the secret once. The billing ceiling is on the token: $25 spend, 40 actions, 3
-              resources, 500,000 inference tokens.
+              You see the secret once. Limits on the token: $25 spend, 40 actions, 3 live resources,
+              500,000 inference tokens. Inspect the scopes that came back.
             </p>
             <p className="small">
               Same call: <code>doctl credentials derive</code> · MCP · Terraform · TypeScript / Go /
@@ -240,7 +241,7 @@ $ # Run the derive call. The child secret is returned once.`;
             <pre className="yaml">{`403 Forbidden
 {
   "id": "ceiling_exhausted",
-  "message": "Spend ceiling reached ($25 of $25).",
+  "message": "Spend ceiling reached ($25.00 of $25.00).",
   "credential": "cred_01HQ8f21c",
   "remaining": { "spend_usd": 0, "actions": 0, "resources": 0, "inference_tokens": 212400 }
 }

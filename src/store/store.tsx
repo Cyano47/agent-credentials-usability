@@ -54,7 +54,7 @@ type Action =
   | { type: "INJECT"; credentialId: string; runId: string }
   | { type: "ADVANCE_RUN"; runId: string }
   | { type: "WIZARD"; kind: WizardKind; runId?: string }
-  | { type: "REVOKE"; credentialId: string }
+  | { type: "REVOKE"; credentialId: string; scope?: "one" | "agent" | "parent" }
   | { type: "END_TASK"; runId: string }
   | { type: "APPROVE_NEW_CHILD"; runId: string }
   | { type: "TRY_EXTEND"; credentialId: string }
@@ -492,7 +492,7 @@ function reducer(state: StudyState, action: Action): StudyState {
           ),
           toast: hit
             ? state.exhaustVariant === "pause-and-approve"
-              ? "Run paused. End the task or create a new token. The agent cannot raise its own billing ceiling."
+              ? "Run paused. End the task or create a new token. The agent cannot raise its own limits."
               : "Run stopped. Create a new token if they still want the environment."
             : "Agent retried a create.",
           eventLog: addLog(state, hit ? `Ceiling exhausted on ${cred.label}` : `Retry on ${cred.label}`),
@@ -503,10 +503,14 @@ function reducer(state: StudyState, action: Action): StudyState {
     case "REVOKE": {
       const cred = state.credentials.find((c) => c.id === action.credentialId);
       if (!cred) return state;
-      const revokeDescendants = cred.kind === "parent";
+      const scope = action.scope ?? (cred.kind === "parent" ? "parent" : "one");
       const ids = new Set(
         state.credentials
-          .filter((c) => c.id === cred.id || (revokeDescendants && c.parent === cred.agent && c.kind === "child"))
+          .filter((c) => {
+            if (scope === "one") return c.id === cred.id;
+            if (scope === "agent") return c.kind === "child" && c.agent === cred.agent;
+            return c.kind === "parent" || c.agent === cred.agent || c.parent === cred.agent;
+          })
           .map((c) => c.id),
       );
       const leftover = state.resources.filter((r) => ids.has(r.credentialId) && r.status === "running");
@@ -573,7 +577,7 @@ function reducer(state: StudyState, action: Action): StudyState {
               }
             : r,
         ),
-        toast: "New task token created and given to the agent. The agent did not raise its own billing ceiling.",
+        toast: "New task token created and given to the agent. The agent did not raise its own limits.",
         eventLog: addLog(state, `Approved new child ${child.label}`),
       };
     }
@@ -585,7 +589,7 @@ function reducer(state: StudyState, action: Action): StudyState {
     case "TRY_RAISE_CEILING":
       return {
         ...mark(state, "triedToRaiseCeilingFromAgent"),
-        toast: "The agent cannot raise its own billing ceiling. End the task or create a new token.",
+        toast: "The agent cannot raise its own limits. End the task or create a new token.",
       };
     case "DELETE_RESOURCE":
       return {

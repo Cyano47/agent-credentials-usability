@@ -6,12 +6,18 @@ import { Walkthrough } from "./Walkthrough";
 
 const NAV: { id: ScreenId; label: string; section: string }[] = [
   { id: "scenarios", label: "Scenarios", section: "Demo" },
-  { id: "platform", label: "DO console", section: "Manage" },
-  { id: "console", label: "API tokens", section: "Manage" },
-  { id: "droplets", label: "Resources", section: "Manage" },
-  { id: "managed-agents", label: "Agents", section: "Manage" },
-  { id: "cli", label: "IDE / CLI", section: "Manage" },
-  { id: "vision", label: "Control plane", section: "Manage" },
+  { id: "platform", label: "1. Task credential", section: "The product" },
+  { id: "limits", label: "2. Limits", section: "The product" },
+  { id: "shutoff", label: "3. Shut off", section: "The product" },
+  { id: "decisions", label: "4. Decision record", section: "The product" },
+  { id: "droplets", label: "5. Reverse leftovers", section: "The product" },
+  { id: "suggested", label: "6. Suggested ceilings", section: "The product" },
+  { id: "offboard", label: "7. Offboarding", section: "The product" },
+  { id: "oidc", label: "8. No standing secret", section: "The product" },
+  { id: "intent", label: "9. Intent-bound", section: "The product" },
+  { id: "console", label: "API tokens", section: "Also" },
+  { id: "managed-agents", label: "Agents", section: "Also" },
+  { id: "cli", label: "IDE / CLI", section: "Also" },
 ];
 
 export function Layout({ children }: { children: ReactNode }) {

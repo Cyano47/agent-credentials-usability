@@ -19,10 +19,6 @@ export function ceilingProgress(
   );
 }
 
-function emptySpend(progress: CeilingProgress) {
-  return progress.spend_usd ?? { used: 0, max: DEFAULT_CEILINGS.spend_usd };
-}
-
 function Meter({
   label,
   used,
@@ -56,14 +52,14 @@ export function BillingCeiling({
   progress,
   tour = false,
   compact = false,
-  note = "New API calls stop when actions, resources, tokens, or $ spend hit the cap. Leftover Droplets still bill until you reverse them.",
+  note = "New API calls stop when spend, actions, live resources, or inference tokens hit the cap. Reverse leftovers to stop the hourly bill.",
 }: {
   progress: CeilingProgress;
   tour?: boolean;
   compact?: boolean;
   note?: string;
 }) {
-  const spend = emptySpend(progress);
+  const spend = progress.spend_usd ?? { used: 0, max: DEFAULT_CEILINGS.spend_usd };
   const exhausted =
     progress.actions.used >= progress.actions.max || spend.used >= spend.max;
   return (
@@ -72,12 +68,12 @@ export function BillingCeiling({
       data-tour={tour ? "billing-ceiling" : undefined}
     >
       <div className="ceiling-head">
-        <strong>Billing ceiling</strong>
+        <strong>Limits</strong>
         {exhausted && <span className="pill ceiling_exhausted">reached</span>}
       </div>
       <Meter money label="Spend" used={spend.used} max={spend.max} />
       <Meter label="Actions" used={progress.actions.used} max={progress.actions.max} />
-      <Meter label="Resources" used={progress.resources.used} max={progress.resources.max} />
+      <Meter label="Live resources" used={progress.resources.used} max={progress.resources.max} />
       <Meter
         label="Inference tokens"
         used={progress.inference_tokens.used}

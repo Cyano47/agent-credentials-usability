@@ -10,11 +10,12 @@ import type {
   StudyState,
 } from "../types";
 
-/** Frozen clock for the study: matches the v7 PRFAQ launch narrative. */
+/** Frozen clock for the study: matches the v8 PRFAQ launch narrative. */
 export const STUDY_NOW = "2027-02-10T18:34:12Z";
 
 export const PARENT_SCOPES = [
-  "droplet:create",
+  "droplet:create:basic",
+  "droplet:create:gpu",
   "droplet:read",
   "droplet:delete",
   "droplet:update",
@@ -26,7 +27,7 @@ export const PARENT_SCOPES = [
 ] as const;
 
 export const TASK_SCOPES = [
-  "droplet:create",
+  "droplet:create:basic",
   "droplet:read",
   "droplet:delete",
   "volume:*",
@@ -35,7 +36,7 @@ export const TASK_SCOPES = [
 ] as const;
 
 export const AGENT_ACTIONS = [
-  { action: "Create Droplet", scope: "droplet:create" },
+  { action: "Create Droplet", scope: "droplet:create:basic" },
   { action: "Create Volume", scope: "volume:create" },
   { action: "Call inference", scope: "inference:invoke" },
 ] as const;
@@ -244,7 +245,7 @@ export const DECISIONS: Decision[] = [
     tenantId: "acme-user-a",
     timestamp: "2027-02-10T18:31:18Z",
     action: "Create Droplet",
-    scope: "droplet:create",
+    scope: "droplet:create:basic",
     resourceId: "droplet-3182",
     resourceName: "staging-web-1",
     outcome: "permitted",
@@ -272,7 +273,7 @@ export const DECISIONS: Decision[] = [
     tenantId: "acme-user-a",
     timestamp: "2027-02-10T18:31:41Z",
     action: "Create Droplet",
-    scope: "droplet:create",
+    scope: "droplet:create:basic",
     resourceId: "droplet-3183",
     resourceName: "staging-web-2",
     outcome: "permitted",
@@ -298,7 +299,7 @@ export const DECISIONS: Decision[] = [
     tenantId: "acme-user-a",
     timestamp: "2027-02-10T18:32:11Z",
     action: "Create Droplet",
-    scope: "droplet:create",
+    scope: "droplet:create:basic",
     resourceId: "droplet-3184",
     resourceName: "staging-web-3",
     outcome: "permitted",
@@ -398,7 +399,7 @@ export const DECISIONS: Decision[] = [
     tenantId: "acme-user-a",
     timestamp: "2027-02-10T18:33:58Z",
     action: "Create Droplet",
-    scope: "droplet:create",
+    scope: "droplet:create:basic",
     outcome: "ceiling_exhausted",
     task: "task-8f21c",
     ceilings: ceil(40, 3, 287600, 25),
@@ -423,7 +424,7 @@ export const DECISIONS: Decision[] = [
     tenantId: "acme-user-b",
     timestamp: "2027-02-10T18:34:08Z",
     action: "Create Droplet",
-    scope: "droplet:create",
+    scope: "droplet:create:basic",
     resourceId: "droplet-5501",
     resourceName: "preview-api-1",
     outcome: "permitted",
@@ -577,7 +578,7 @@ export const HAPPY_PATH_STEPS: Array<{
   },
   {
     action: "Create Droplet",
-    scope: "droplet:create",
+    scope: "droplet:create:basic",
     outcome: "permitted",
     detail: "s-2vcpu-4gb in nyc3.",
     resource: {

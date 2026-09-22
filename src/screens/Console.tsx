@@ -39,7 +39,7 @@ export function Console() {
               <th>Last used</th>
               <th>Expires</th>
               <th>Scopes</th>
-              <th>Billing ceiling</th>
+              <th>Limits</th>
               <th>Status</th>
             </tr>
           </thead>
@@ -64,7 +64,7 @@ export function Console() {
                 <td>{cred.scopes.length}</td>
                 <td>
                   {cred.ceilings
-                    ? `$${cred.ceilings.spend_usd} · ${cred.ceilings.actions} actions · ${cred.ceilings.resources} resources`
+                    ? `$${cred.ceilings.spend_usd} · ${cred.ceilings.actions} actions · ${cred.ceilings.resources} live`
                     : "None"}
                 </td>
                 <td>
@@ -100,8 +100,8 @@ export function Console() {
               {(runA?.status === "paused" || runA?.status === "ceiling_exhausted") &&
                 selected.id === "cred_01HQ8f21c" && (
                   <div className="banner warn" data-tour="ceiling-banner">
-                    Billing ceiling reached ($25 of $25, 40 of 40 actions). End the task or create a
-                    new token from the main token. The agent cannot raise this ceiling.
+                    Action limit reached (40 of 40). End the task or create a new token from the
+                    main token. The agent cannot raise its own limits.
                     <div className="actions">
                       <button
                         className="btn secondary"
@@ -119,7 +119,7 @@ export function Console() {
                         className="btn danger"
                         onClick={() => dispatch({ type: "TRY_RAISE_CEILING", runId: runA.id })}
                       >
-                        Let the agent raise the billing ceiling
+                        Let the agent raise its limits
                       </button>
                     </div>
                   </div>

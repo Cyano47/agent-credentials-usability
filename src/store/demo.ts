@@ -23,7 +23,7 @@ export interface Scenario {
 
 const savedToken: WalkStep = {
   title: "The main token is already saved",
-  body: "A customer asked for a staging box. The main token stays in the DigitalOcean console. Do not give it to the agent.",
+  body: "A customer asked for a staging box. The main token stays here. Do not give it to the agent.",
   tryThis: "Leave it hidden.",
   target: "secret-manager",
   screen: "platform",
@@ -31,81 +31,142 @@ const savedToken: WalkStep = {
 };
 
 const createToken: WalkStep = {
-  title: "Give the task its own token",
-  body: "Create a token that lasts 10 minutes. The agent will Create Droplet, Create Volume, and Call inference. If the task takes longer, create a new token. Do not reuse the main one.",
+  title: "1. Give the task its own credential",
+  body: "Ten minutes. Create, read, and delete basic Droplets and volumes. Call inference. Never broader than the parent. If the task takes longer, issue a new credential.",
   tryThis: "Create a task token, then give it to the agent.",
   target: "derive-task",
   screen: "platform",
   placement: "left",
 };
 
-const billingCeiling: WalkStep = {
-  title: "This is the billing ceiling",
-  body: "$25 spend, 40 actions, 3 resources, 500,000 inference tokens. New API calls stop when any of these is hit. Droplets already created still bill until you reverse them. The agent cannot raise this.",
-  tryThis: "Leave these numbers. Then create the task token.",
+const limits: WalkStep = {
+  title: "2. These are the limits",
+  body: "$25 spend, 40 actions, 3 live resources, 500,000 inference tokens. All four stop the next call on every surface. The agent cannot raise these.",
+  tryThis: "Leave these numbers.",
   target: "billing-ceiling",
-  screen: "platform",
+  screen: "limits",
+  select: CHILD_A.id,
   placement: "left",
+};
+
+const instanceClass: WalkStep = {
+  title: "Basic Droplets only",
+  body: "droplet:create:basic. A GPU Droplet is refused. Combined with the $25 spend cap, rate and total are both bounded.",
+  target: "limits-class",
+  screen: "limits",
+  placement: "right",
+};
+
+const hitLimit: WalkStep = {
+  title: "The spend and action limits were hit",
+  body: "$25 of $25, 40 of 40 actions. The run pauses. The user still wants the environment. End the task or create a new credential from the main token. The agent cannot raise its own limits.",
+  tryThis: "Do not click “Let the agent raise its limits.”",
+  target: "limits-hit",
+  screen: "limits",
+  select: CHILD_A.id,
+  apply: "hit-ceiling",
+  placement: "bottom",
 };
 
 const twoAmPager: WalkStep = {
   title: "It is 2 a.m.",
-  body: "Customer A’s agent is looping Create Droplet, Create Volume, and Call inference. Customer B must keep running.",
-  tryThis: "Look at the pager, then the live board.",
+  body: "Customer A’s agent is looping. Customer B must keep running.",
+  tryThis: "Look at the pager, then shut off one task.",
   target: "pager",
-  screen: "console",
+  screen: "shutoff",
   select: CHILD_A.id,
   pager: true,
   placement: "bottom",
 };
 
 const stopA: WalkStep = {
-  title: "Stop customer A. Leave B up.",
-  body: "Revoke the task token, not the main token. One click. Customer B keeps working.",
-  tryThis: "Click Revoke token on task-8f21c. Then look at customer B on the board.",
+  title: "3. Shut off this task. Leave B up.",
+  body: "One call. The next request is refused on the API, MCP, and CLI. Do not shut off the parent.",
+  tryThis: "Click Revoke token on task-8f21c. Then look at customer B.",
   target: "revoke-task",
-  screen: "console",
+  screen: "shutoff",
   select: CHILD_A.id,
   pager: true,
   placement: "right",
 };
 
 const leftovers: WalkStep = {
-  title: "What did it create, and what still costs?",
-  body: "Revoke stops new calls. It does not delete Droplets or Volumes. They keep billing until you reverse them.",
-  tryThis: "Destroy one, or reverse all leftovers from this token.",
-  target: "leftover-droplets",
+  title: "5. Reverse leftovers",
+  body: "The Droplets it already created are still running and still billing. Reverse them in one click, or destroy one at a time. Each leftover has a one-hour lease.",
+  tryThis: "Click Reverse leftovers. Leave customer B alone.",
+  target: "reverse-leftovers",
   screen: "droplets",
   apply: "revoke-a",
   pager: true,
   placement: "bottom",
 };
 
-const reverseLeftovers: WalkStep = {
-  title: "Reverse what it created",
-  body: "Compensating cleanup deletes the leftover Droplets and Volumes and stops their hourly bill. Customer B’s resources stay up.",
-  tryThis: "Click Reverse leftovers for this token.",
-  target: "reverse-effects",
+const leases: WalkStep = {
+  title: "Leases stop leftover spend",
+  body: "Every resource created by a task credential gets a one-hour lease. When the lease ends, the platform reverses it unless you extend.",
+  target: "leases",
   screen: "droplets",
-  pager: true,
+  placement: "left",
+};
+
+const decisions: WalkStep = {
+  title: "4. What did this agent do?",
+  body: "Human → agent → task, the access it used, permitted or refused, and how much of the limit was left. A silent path would show up as a missing record.",
+  tryThis: "Filter to limit reached.",
+  target: "decision-record",
+  screen: "decisions",
+  select: CHILD_A.id,
   placement: "bottom",
 };
 
-const hitLimit: WalkStep = {
-  title: "The billing ceiling was hit",
-  body: "$25 of $25 and 40 of 40 actions. The run pauses. The user still wants the environment. End the task or create a new token from the main token. The agent cannot raise the billing ceiling.",
-  tryThis: "Do not click “Let the agent raise the billing ceiling.”",
-  target: "billing-ceiling",
-  screen: "console",
-  select: CHILD_A.id,
-  apply: "hit-ceiling",
-  pager: true,
-  placement: "bottom",
+const suggested: WalkStep = {
+  title: "6. Suggested ceilings",
+  body: "The platform recommends $18 spend and 36 actions from the last 12 coding-agent-prod runs. You can still type your own.",
+  tryThis: "Leave the suggested numbers.",
+  target: "suggested-defaults",
+  screen: "suggested",
+  placement: "left",
+};
+
+const utilization: WalkStep = {
+  title: "Utilization by agent",
+  body: "Median run used 61% of its spend ceiling. Three of 48 runs hit a ceiling. Those three were retry loops.",
+  target: "utilization",
+  screen: "suggested",
+  placement: "right",
+};
+
+const offboard: WalkStep = {
+  title: "7. Maya left",
+  body: "Every credential she owned is re-attributed. Limits and shutoff stay in place. No standing token walks out with her.",
+  tryThis: "Click Maya left.",
+  target: "offboard",
+  screen: "offboard",
+  apply: "offboard",
+  placement: "left",
+};
+
+const oidc: WalkStep = {
+  title: "8. No standing secret",
+  body: "CI exchanges OIDC for a task credential. The long-lived token is only a derivation root. It never enters the pipeline.",
+  tryThis: "Exchange OIDC for a task credential.",
+  target: "oidc",
+  screen: "oidc",
+  placement: "left",
+};
+
+const intent: WalkStep = {
+  title: "9. Intent-bound actions",
+  body: "This run may create staging-web-1. Updating preview-api-1 is refused. Authority is the operation, not the category.",
+  tryThis: "Try updating preview-api-1.",
+  target: "intent-bound",
+  screen: "intent",
+  placement: "left",
 };
 
 const managed: WalkStep = {
-  title: "Same pager. You did not make this token.",
-  body: "DigitalOcean created the token for this Managed Agents run. The same $25 / 40 / 3 / 500k billing ceiling is on the run.",
+  title: "Same limits, Managed Agents",
+  body: "DigitalOcean issued the credential. You did not. Spend, actions, live resources, and inference tokens all stop here.",
   tryThis: "Approve a new token or end the task.",
   target: "managed-run",
   screen: "managed-agents",
@@ -114,8 +175,8 @@ const managed: WalkStep = {
 };
 
 const cliCode: WalkStep = {
-  title: "Same token, from the IDE",
-  body: "This is not console-only. orchestrator.ts calls POST /v2/credentials with the $25 spend ceiling. The main token never leaves the vault.",
+  title: "Same credential, from the IDE",
+  body: "POST /v2/credentials with spend, actions, live resources, and inference tokens. The main token never leaves the vault.",
   target: "cli-derive",
   screen: "cli",
   placement: "bottom",
@@ -123,7 +184,7 @@ const cliCode: WalkStep = {
 
 const cliRun: WalkStep = {
   title: "Run the create",
-  body: "You see the secret once. The response includes the billing ceiling. The agent never gets the main token.",
+  body: "You see the secret once. Inspect the scopes that came back. The agent never gets the main token.",
   tryThis: "Click Run POST /v2/credentials.",
   target: "cli-run",
   screen: "cli",
@@ -132,142 +193,108 @@ const cliRun: WalkStep = {
 
 const cliExport: WalkStep = {
   title: "Give only the new token to the agent",
-  body: "Export the child, then let the agent Create Droplet, Create Volume, and Call inference. Open agent.ts, doctl, MCP, or Terraform if you want the same call.",
-  tryThis: "Export child to agent env, then Agent calls the API.",
+  body: "Export the child. MCP and Terraform use the same derive, revoke, reverse, and decisions.",
+  tryThis: "Export child to agent env.",
   target: "cli-export",
   screen: "cli",
   placement: "top",
 };
 
-const cliSurfaces: WalkStep = {
-  title: "MCP and Terraform too",
-  body: "The same derive, revoke, and ceiling live on the DigitalOcean MCP server and in Terraform. One revoke stops every surface.",
-  tryThis: "Open the MCP or Terraform tab.",
-  target: "cli-surfaces",
-  screen: "cli",
-  placement: "top",
-};
-
-const suggested: WalkStep = {
-  title: "Suggested ceilings from past runs",
-  body: "The platform recommends $18 / 36 actions from the last 12 coding-agent-prod runs. You can still type your own. You do not have to guess.",
-  tryThis: "Read the suggested values.",
-  target: "suggested-defaults",
-  screen: "vision",
-  placement: "right",
-};
-
-const utilization: WalkStep = {
-  title: "Utilization by agent",
-  body: "Median run used 61% of its spend ceiling. Three of 48 runs hit a ceiling. Those three were retry loops. Use this to tighten or loosen the next token.",
-  target: "utilization",
-  screen: "vision",
-  placement: "right",
-};
-
-const reconcile: WalkStep = {
-  title: "Reconciled with billing",
-  body: "Every permitted create matches a billing or resource-creation event. A silent path would show up as a missing record, not as a complete log.",
-  target: "reconcile",
-  screen: "vision",
-  placement: "right",
-};
-
-const offboard: WalkStep = {
-  title: "Maya left. Re-attribute.",
-  body: "When someone leaves, every credential they owned is re-attributed. Ceilings and revocation stay in place. No standing token walks out with them.",
-  tryThis: "Click Maya left. Re-attribute credentials.",
-  target: "offboard",
-  screen: "vision",
-  placement: "left",
-};
-
-const oidc: WalkStep = {
-  title: "No standing secret in CI",
-  body: "CI and cloud workloads exchange OIDC for a task credential. The long-lived token is only a derivation root. It never enters the agent or the pipeline.",
-  target: "oidc",
-  screen: "vision",
-  placement: "left",
-};
-
-const intentBound: WalkStep = {
-  title: "This run may do these operations",
-  body: "Create Droplet staging-web-1. Create Volume staging-data. Call inference on one model. droplet:update on any other Droplet is refused. Authority is the operation, not the category.",
-  tryThis: "Try updating a different Droplet.",
-  target: "intent-bound",
-  screen: "vision",
-  placement: "left",
-};
-
 export const SCENARIOS: Scenario[] = [
   {
     id: "ship-a-task",
-    title: "Ship a task",
-    blurb:
-      "A customer asked your coding agent to stand up a staging box. The main token is already saved. Get the agent running without giving it more access than the task needs.",
-    steps: [savedToken, createToken, billingCeiling],
-  },
-  {
-    id: "two-am",
-    title: "2 a.m. loop",
-    blurb:
-      "Pager: customer A’s agent is looping Create Droplet, Create Volume, and Call inference. Stop that agent. Do not take customer B down. Then reverse what it created.",
-    setup: "hit-ceiling",
-    steps: [twoAmPager, stopA, leftovers, reverseLeftovers],
+    title: "1. Task credential",
+    blurb: "Issue a ten-minute credential for one staging-box task. The main token stays saved.",
+    steps: [savedToken, createToken],
   },
   {
     id: "hit-limit",
-    title: "The billing ceiling was hit",
-    blurb: "The run hit $25 and 40 actions. The user still wants the environment. What do you do?",
+    title: "2. Limits",
+    blurb: "$25 spend, 40 actions, 3 live resources, basic Droplets. The agent cannot raise this.",
     setup: "hit-ceiling",
-    steps: [hitLimit],
+    steps: [limits, instanceClass, hitLimit],
+  },
+  {
+    id: "two-am",
+    title: "3. Shut off",
+    blurb: "Stop customer A in one call. Leave B up. Then reverse leftovers.",
+    setup: "hit-ceiling",
+    steps: [twoAmPager, stopA, leftovers],
+  },
+  {
+    id: "decisions",
+    title: "4. Decision record",
+    blurb: "Query what the agent did, in order, with the access it used and what was refused.",
+    steps: [decisions],
+  },
+  {
+    id: "reverse",
+    title: "5. Reverse leftovers",
+    blurb: "One click reverses leftover Droplets and Volumes. Each leftover has a one-hour lease.",
+    setup: "revoke-a",
+    steps: [leftovers, leases],
+  },
+  {
+    id: "suggested",
+    title: "6. Suggested ceilings",
+    blurb: "The platform recommends $18 and 36 actions from the last 12 runs. Utilization is visible.",
+    steps: [suggested, utilization],
+  },
+  {
+    id: "offboard",
+    title: "7. Offboarding",
+    blurb: "Maya left. Credentials re-attribute. Limits stay. No standing token walks out.",
+    steps: [offboard],
+  },
+  {
+    id: "oidc",
+    title: "8. No standing secret",
+    blurb: "CI exchanges OIDC for a task credential. The parent never enters the pipeline.",
+    steps: [oidc],
+  },
+  {
+    id: "intent",
+    title: "9. Intent-bound",
+    blurb: "Authority is the operation, not the category. Updating preview-api-1 is refused.",
+    steps: [intent],
   },
   {
     id: "ide-cli",
-    title: "Create a token in the IDE / CLI",
-    blurb:
-      "Same create, from code. POST /v2/credentials, doctl, MCP, or Terraform. Give only the new token to the agent.",
-    steps: [cliCode, cliRun, cliExport, cliSurfaces],
+    title: "Same credential in the IDE / CLI",
+    blurb: "POST /v2/credentials, doctl, MCP, or Terraform. One shutoff stops every surface.",
+    steps: [cliCode, cliRun, cliExport],
   },
   {
     id: "managed",
     title: "Same pager, Managed Agents",
-    blurb: "Same 2 a.m. incident. DigitalOcean made the token. You did not.",
+    blurb: "DigitalOcean made the token. Spend, actions, resources, and inference all stop here.",
     setup: "hit-ceiling",
     steps: [managed],
-  },
-  {
-    id: "control-plane",
-    title: "Control plane",
-    blurb:
-      "Suggested ceilings, utilization, billing reconciliation, owner offboarding, OIDC, and intent-bound actions.",
-    steps: [suggested, utilization, reconcile, offboard, oidc, intentBound],
   },
   {
     id: "complete",
     title: "Complete walkthrough",
     blurb:
-      "The full product, in order: ship a task, IDE / MCP / Terraform, 2 a.m., the $ billing ceiling, reverse leftovers, Managed Agents, then the control plane. You click Next or Exit.",
+      "The entire product, in order: task credential, limits, shut off, decision record, reverse leftovers, suggested ceilings, offboarding, OIDC, and intent-bound. You click Next or Exit.",
     steps: [
       savedToken,
       createToken,
-      billingCeiling,
+      limits,
+      instanceClass,
       cliCode,
       cliRun,
-      cliExport,
-      cliSurfaces,
       twoAmPager,
       hitLimit,
       stopA,
       leftovers,
-      reverseLeftovers,
-      managed,
+      leases,
+      decisions,
       suggested,
       utilization,
-      reconcile,
       offboard,
       oidc,
-      intentBound,
+      intent,
+      managed,
     ],
   },
 ];

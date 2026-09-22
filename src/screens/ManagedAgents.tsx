@@ -14,8 +14,8 @@ export function ManagedAgents() {
         <div>
           <h1>Agents</h1>
           <p>
-            DigitalOcean created this token for the run. You did not. The billing ceiling is on the
-            run, not on a saved token.
+            DigitalOcean created this token for the run. You did not. Spend, actions, live
+            resources, and inference tokens all stop here.
           </p>
         </div>
       </div>
@@ -59,11 +59,12 @@ ceilings:
                   max: DEFAULT_CEILINGS.spend_usd,
                 },
               }}
+              note="Spend, actions, live resources, and inference tokens all stop on Managed Agents."
             />
             {state.exhaustVariant === "pause-and-approve" ? (
               <div className="banner warn">
-                The run paused at its billing ceiling. Create a new token, or end the task. The
-                agent cannot raise its own ceiling.
+                The run paused at its action limit. Create a new token, or end the task. The agent
+                cannot raise its own limits.
               </div>
             ) : (
               <div className="banner warn">

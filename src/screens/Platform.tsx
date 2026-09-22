@@ -23,10 +23,10 @@ export function Platform() {
     <div>
       <div className="page-head">
         <div>
-          <h1>DigitalOcean console</h1>
+          <h1>Task credential</h1>
           <p>
-            Create a token for this task. Keep the main token saved. Give the agent only what it
-            needs.
+            Issue a credential for this task. Keep the main token saved. It can only be narrower
+            than the one it came from.
           </p>
         </div>
       </div>
@@ -53,7 +53,10 @@ export function Platform() {
         <div className="col">
           <div className="card" data-tour="derive-task">
             <h3>2. Create a task token</h3>
-            <p className="lede">A customer wants a staging box. The agent will create a Droplet, a Volume, and call inference.</p>
+            <p className="lede">
+              A customer wants a staging box. The agent may create basic Droplets and volumes and
+              call inference — not GPU.
+            </p>
             <button
               className={`choice ${!useParent ? "picked" : ""}`}
               onClick={() => setUseParent(false)}
@@ -100,7 +103,7 @@ export function Platform() {
                     inference_tokens: { used: 0, max: DEFAULT_CEILINGS.inference_tokens },
                     spend_usd: { used: 0, max: DEFAULT_CEILINGS.spend_usd },
                   }}
-                  note="Suggested from the last 12 coding-agent-prod runs: $18 spend, 36 actions. This token stops at $25, 40 actions, 3 resources, and 500,000 inference tokens. Leftover Droplets still bill until you reverse them."
+                  note="$25 spend, 40 actions, 3 live resources, and 500,000 inference tokens stop on every surface. Leftover Droplets still bill until you reverse them."
                 />
                 <button
                   className="btn"
